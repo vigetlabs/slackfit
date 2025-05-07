@@ -27,11 +27,12 @@ SlackFit is a Slack bot for gamified workout check-ins, accountability, and enco
 3. **Create a `.env` file:**
    Copy `.env.example` or create a new `.env` file with:
    ```env
-   SLACK_BOT_TOKEN=your-slack-bot-token
-   SLACK_APP_TOKEN=xapp-1-A000000000000-0000000000000-0000000000000
+   SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
+   SLACK_APP_TOKEN=xapp-your-slack-app-token
    SLACK_SIGNING_SECRET=your-slack-signing-secret
    EXERCISE_CHANNEL_ID=your-channel-id
    SLACK_APP_ID=A08R3D5MY12
+   # PORT=5173
    ```
 
 4. **Run the bot locally:**
@@ -53,6 +54,7 @@ SlackFit is a Slack bot for gamified workout check-ins, accountability, and enco
 - `SLACK_BOT_TOKEN`: Your Slack bot token
 - `SLACK_SIGNING_SECRET`: Your Slack app signing secret
 - `EXERCISE_CHANNEL_ID`: The channel ID for exercise check-ins
+- `PORT`: (Optional) The port the app will run on locally. Defaults to 5173 if not set.
 
 ## Project Structure
 - `src/` - Main TypeScript source code

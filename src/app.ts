@@ -152,7 +152,8 @@ async function postMonthlyLeaderboard(): Promise<void> {
 (async () => {
   await storage.initDB();
   scheduleAll({ postThread, postWeeklyLeaderboard, postMonthlyLeaderboard });
-  await app.start(process.env.PORT ? Number(process.env.PORT) : 3000);
+  const PORT = process.env.PORT ? Number(process.env.PORT) : 5173;
+  await app.start(PORT);
   console.log('⚡️ SlackFit app is running!');
 })();
 
