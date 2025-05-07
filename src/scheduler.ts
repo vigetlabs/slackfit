@@ -35,8 +35,8 @@ function scheduleAll({
   postWeeklyLeaderboard,
   postMonthlyLeaderboard
 }: ScheduleAllArgs): void {
-  // Weekdays 9am ET (Mon-Fri, dow 1-5)
-  cron.schedule(etToUtcCron(0, 9, '1-5'), async () => {
+  // Weekdays 8am ET (Mon-Fri, dow 1-5)
+  cron.schedule(etToUtcCron(0, 8, '1-5'), async () => {
     const text = getDailyThreadMessage();
     await postThread(text);
   });
