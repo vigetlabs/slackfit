@@ -22,11 +22,15 @@ interface MonthlyLeaderboardEntry {
 function calculatePoints(user: User): number {
   const checkInPoints = (user.checkIns?.length || 0) * SCORING.DAILY_CHECKIN_POINTS;
   const mediaPoints = (user.mediaCheckIns?.length || 0) * SCORING.MEDIA_BONUS_POINTS;
-  const reactionPoints = Math.min(
+  const reactionReceivedPoints = Math.min(
     (user.reactionsReceived || 0) * SCORING.REACTION_POINT,
     SCORING.MAX_REACTION_POINTS
   );
-  return checkInPoints + mediaPoints + reactionPoints;
+  const reactionGivenPoints = Math.min(
+    (user.reactionsGiven || 0) * SCORING.REACTION_POINT,
+    SCORING.MAX_REACTION_POINTS
+  );
+  return checkInPoints + mediaPoints + reactionReceivedPoints + reactionGivenPoints;
 }
 
 // Get the weekly leaderboard (total points for each user)
