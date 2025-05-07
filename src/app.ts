@@ -76,7 +76,15 @@ app.event('message', async ({ event }: { event: SlackEvent }) => {
     parent && parent.ts
       ? new Date(Number(parent.ts.split('.')[0]) * 1000).toISOString().slice(0, 10)
       : new Date(Number((event as any).ts.split('.')[0]) * 1000).toISOString().slice(0, 10);
-  if (containsMention((event as any).text)) {
+
+  // Check if user already has a valid check-in for this date
+  const postsForDate = await storage.getPostsByDate(parentDate);
+  const userHasValidCheckIn = postsForDate.some(
+    (p) => p.user === (event as any).user && p.isCheckIn
+  );
+
+  // If the post contains a mention or the user already checked in, it's not a valid check-in
+  if (containsMention((event as any).text) || userHasValidCheckIn) {
     await storage.logPost({
       user: (event as any).user,
       ts: (event as any).ts,
