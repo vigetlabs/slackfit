@@ -39,9 +39,31 @@ SlackFit is a Slack bot for gamified workout check-ins, accountability, and enco
    ```bash
    npm run dev
    ```
-   For local development, use [ngrok](https://ngrok.com/) to expose your port and set the Slack Event Subscription URL.
 
-5. **Post a daily thread manually (for testing):**
+5. **Expose your local server with ngrok:**
+   - Install ngrok if you haven't already:
+     ```bash
+     npm install -g ngrok
+     ```
+   - Start ngrok on the port your app is running on (default is 5173):
+     ```bash
+     ngrok http 5173
+     ```
+   - Copy the HTTPS forwarding URL provided by ngrok (e.g., `https://abcd1234.ngrok.io`).
+
+6. **Update your Slack App settings:**
+   - Go to your app's settings at https://api.slack.com/apps and select your app.
+   - **Event Subscriptions:**
+     - Enable Events.
+     - Set the Request URL to: `https://<your-ngrok-subdomain>.ngrok.io/slack/events`
+   - **Interactivity & Shortcuts:**
+     - Enable Interactivity.
+     - Set the Request URL to: `https://<your-ngrok-subdomain>.ngrok.io/slack/interactivity`
+   - **Slash Commands:**
+     - For each slash command (e.g., `/whiteboard`), set the Request URL to: `https://<your-ngrok-subdomain>.ngrok.io/slack/commands`
+   - Save your changes in the Slack App settings.
+
+7. **Post a daily thread manually (for testing):**
    ```bash
    npm run post-thread
    ```
