@@ -121,7 +121,7 @@ async function postWeeklyLeaderboard(): Promise<void> {
   if (!channel) throw new Error('EXERCISE_CHANNEL_ID is not set');
   await points.calculateWeeklyStreaks();
   const board = await leaderboard.getWeeklyLeaderboard();
-  const text = leaderboard.formatLeaderboard(board, 'week');
+  const text = await leaderboard.formatLeaderboardWithNames(board, app.client, 'week');
   await app.client.chat.postMessage({ channel, text });
   await storage.resetWeekly();
 }
@@ -131,7 +131,7 @@ async function postMonthlyLeaderboard(): Promise<void> {
   if (!channel) throw new Error('EXERCISE_CHANNEL_ID is not set');
   // Use last 20 days as month for demo
   const board = await leaderboard.getMonthlyLeaderboard();
-  const text = leaderboard.formatLeaderboard(board, 'month');
+  const text = await leaderboard.formatLeaderboardWithNames(board, app.client, 'month');
   await app.client.chat.postMessage({ channel, text });
   await storage.resetMonthly();
 }

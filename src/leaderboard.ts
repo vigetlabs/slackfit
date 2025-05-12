@@ -89,20 +89,6 @@ async function formatLeaderboardWithNames(
   return text;
 }
 
-// Fallback: Format the leaderboard for display in Slack using user IDs
-function formatLeaderboard(
-  leaderboard: (WeeklyLeaderboardEntry | MonthlyLeaderboardEntry)[],
-  period: 'week' | 'month' = 'week'
-): string {
-  if (!leaderboard || leaderboard.length === 0)
-    return ':hourglass_flowing_sand: No leaderboard data available. No check-ins or points have been recorded yet!';
-  let text = `:trophy: *${period === 'week' ? 'Weekly' : 'Monthly'} Leaderboard* :trophy:\n`;
-  leaderboard.forEach((u, i) => {
-    text += `*${i + 1}. ${u.name}* - ${period === 'week' ? (u as WeeklyLeaderboardEntry).weekPoints : (u as MonthlyLeaderboardEntry).monthPoints} points\n`;
-  });
-  return text;
-}
-
 // Handler for /whiteboard slash command
 // Responds with both weekly and monthly leaderboards, or a single message if no data
 async function handleLeaderboardCommand({
@@ -131,4 +117,4 @@ async function handleLeaderboardCommand({
   await respond({ text });
 }
 
-export { getWeeklyLeaderboard, getMonthlyLeaderboard, formatLeaderboard, formatLeaderboardWithNames, handleLeaderboardCommand };
+export { getWeeklyLeaderboard, getMonthlyLeaderboard, formatLeaderboardWithNames, handleLeaderboardCommand };

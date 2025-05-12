@@ -21,11 +21,6 @@ async function awardCheckIn(
   await storage.logCheckIn({ user: userId, ts: Date.now().toString(), date, hasMedia });
 }
 
-// Award media bonus if not already given today (legacy, not used in new model)
-async function awardMediaBonus(): Promise<void> {
-  // No-op in new model, kept for compatibility
-}
-
 // --- Reaction Logic ---
 
 // Award points for reactions (to both poster and reactor, unless self-reaction)
@@ -63,4 +58,4 @@ async function calculateWeeklyStreaks(): Promise<void> {
 
 // --- Exports ---
 
-export { awardCheckIn, awardMediaBonus, awardReactionPoints, calculateWeeklyStreaks };
+export { awardCheckIn, awardReactionPoints, calculateWeeklyStreaks };
