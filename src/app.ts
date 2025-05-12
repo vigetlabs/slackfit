@@ -78,57 +78,37 @@ app.event('message', async ({ event }: { event: SlackEvent }) => {
       : new Date(Number((event as any).ts.split('.')[0]) * 1000).toISOString().slice(0, 10);
 
   // Check if user already has a valid check-in for this date
-  const postsForDate = await storage.getPostsByDate(parentDate);
-  const userHasValidCheckIn = postsForDate.some(
-    (p) => p.user === (event as any).user && p.isCheckIn
+  const checkInsForDate = await storage.getCheckInsByDate(parentDate);
+  const userHasValidCheckIn = checkInsForDate.some(
+    (c) => c.user === (event as any).user
   );
 
   // If the post contains a mention or the user already checked in, it's not a valid check-in
   if (containsMention((event as any).text) || userHasValidCheckIn) {
-    await storage.logPost({
-      user: (event as any).user,
-      ts: (event as any).ts,
-      date: parentDate,
-      hasMedia: hasMedia(event),
-      isCheckIn: false
-    });
     return;
   }
   if (!parent || parent.user !== botId) {
-    await storage.logPost({
-      user: (event as any).user,
-      ts: (event as any).ts,
-      date: parentDate,
-      hasMedia: hasMedia(event),
-      isCheckIn: false
-    });
     return;
   }
   const userName = await getSlackUserName((event as any).user);
   await points.awardCheckIn((event as any).user, parentDate, hasMedia(event), userName);
-  await storage.logPost({
-    user: (event as any).user,
-    ts: (event as any).ts,
-    date: parentDate,
-    hasMedia: hasMedia(event),
-    isCheckIn: true
-  });
 });
 
-// Handle reactions to posts (only valid check-ins can earn reaction points)
+// Handle reactions to check-ins (only valid check-ins can earn reaction points)
 app.event('reaction_added', async ({ event }: { event: ReactionAddedEvent }) => {
-  // event.item.ts is the post timestamp being reacted to
-  const postTs = event.item.ts;
-  const posts = await storage.db.read().then(() => storage.db.data.posts);
-  const post = posts.find((p: any) => p.ts === postTs);
-  if (!post) return; // No matching post found
-  if (!post.isCheckIn) return; // Only award points for reactions to check-ins
-  await points.awardReactionPoints(post.user, event.user);
-  await storage.logReaction({ user: post.user, postTs, reactor: event.user, ts: event.event_ts });
+  // event.item.ts is the check-in timestamp being reacted to
+  const checkInTs = event.item.ts;
+  const checkIns = await storage.db.read().then(() => storage.db.data.checkIns);
+  const checkIn = checkIns.find((c: any) => c.ts === checkInTs);
+  if (!checkIn) return; // No matching check-in found
+  await points.awardReactionPoints(checkIn.user, event.user, checkInTs);
+  await storage.logReaction({ user: checkIn.user, postTs: checkInTs, reactor: event.user, ts: event.event_ts });
 });
 
 // Register the /whiteboard command to show the leaderboard
-app.command('/whiteboard', leaderboard.handleLeaderboardCommand);
+app.command('/whiteboard', async ({ ack, respond, client }) => {
+  await leaderboard.handleLeaderboardCommand({ ack, respond, client });
+});
 
 // Post a new daily thread in the exercise channel
 async function postThread(text: string): Promise<void> {

@@ -14,30 +14,11 @@ async function awardCheckIn(
   hasMedia: boolean,
   userName?: string
 ): Promise<void> {
-  let user: User | undefined = await storage.getUser(userId);
-  if (!user) {
-    user = {
-      name: userName || userId,
-      checkIns: [],
-      mediaCheckIns: [],
-      reactionsGiven: 0,
-      reactionsReceived: 0,
-      legacyPoints: 0
-    };
-  }
   // Only allow one check-in per day
-  if (user.checkIns.includes(date)) return;
-
-  user.checkIns.push(date);
-  if (hasMedia) {
-    user.mediaCheckIns.push(date);
-  }
-  // Optionally, update legacyPoints for reference
-  user.legacyPoints =
-    (user.legacyPoints || 0) +
-    SCORING.DAILY_CHECKIN_POINTS +
-    (hasMedia ? SCORING.MEDIA_BONUS_POINTS : 0);
-  await storage.setUser(userId, user);
+  await storage.db.read();
+  const alreadyCheckedIn = storage.db.data.checkIns.some((c: any) => c.user === userId && c.date === date);
+  if (alreadyCheckedIn) return;
+  await storage.logCheckIn({ user: userId, ts: Date.now().toString(), date, hasMedia });
 }
 
 // Award media bonus if not already given today (legacy, not used in new model)
@@ -48,35 +29,29 @@ async function awardMediaBonus(): Promise<void> {
 // --- Reaction Logic ---
 
 // Award points for reactions (to both poster and reactor, unless self-reaction)
-// Only up to SCORING.MAX_REACTION_POINTS points per user
-async function awardReactionPoints(posterId: string, reactorId: string): Promise<void> {
+// Only up to SCORING.MAX_REACTION_POINTS points per check-in
+async function awardReactionPoints(posterId: string, reactorId: string, checkInTs?: string): Promise<void> {
   // Do not award points for self-reactions
   if (posterId === reactorId) return;
 
-  const poster: User | undefined = await storage.getUser(posterId);
-  const reactor: User | undefined = await storage.getUser(reactorId);
-
-  if (!poster && !reactor) return;
+  // Find the check-in for the poster (by ts if provided)
+  await storage.db.read();
+  let checkIn;
+  if (checkInTs) {
+    checkIn = storage.db.data.checkIns.find((c: any) => c.ts === checkInTs && c.user === posterId);
+  } else {
+    // fallback: most recent check-in for poster
+    const checkIns = storage.db.data.checkIns.filter((c: any) => c.user === posterId);
+    checkIn = checkIns[checkIns.length - 1];
+  }
+  if (!checkIn) return;
 
   // Award to post author (reactionsReceived)
-  if (poster) {
-    poster.reactionsReceived = (poster.reactionsReceived || 0) + 1;
-    // Optionally, update legacyPoints for reference
-    if (poster.reactionsReceived <= SCORING.MAX_REACTION_POINTS) {
-      poster.legacyPoints = (poster.legacyPoints || 0) + SCORING.REACTION_POINT;
-    }
-    await storage.setUser(posterId, poster);
+  checkIn.reactionsReceived = (checkIn.reactionsReceived || 0) + 1;
+  if (checkIn.reactionsReceived <= SCORING.MAX_REACTION_POINTS) {
+    checkIn.legacyPoints = (checkIn.legacyPoints || 0) + SCORING.REACTION_POINT;
   }
-
-  // Award to reactor (reactionsGiven)
-  if (reactor) {
-    reactor.reactionsGiven = (reactor.reactionsGiven || 0) + 1;
-    // Optionally, update legacyPoints for reference
-    if (reactor.reactionsGiven <= SCORING.MAX_REACTION_POINTS) {
-      reactor.legacyPoints = (reactor.legacyPoints || 0) + SCORING.REACTION_POINT;
-    }
-    await storage.setUser(reactorId, reactor);
-  }
+  await storage.db.write();
 }
 
 // --- Streak Logic ---

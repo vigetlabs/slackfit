@@ -8,19 +8,18 @@ export interface User {
   name: string;
   checkIns: string[]; // Dates of check-ins
   mediaCheckIns: string[]; // Dates of check-ins with media
-  reactionsGiven: number; // Number of reactions this user has given
-  reactionsReceived: number; // Number of reactions this user has received
-  legacyPoints?: number; // For reference only (legacy)
 }
 
-// Post data structure for each thread reply
-export interface Post {
+// CheckIn data structure for each valid check-in
+export interface CheckIn {
   user: string;
   ts: string;
   date: string;
   hasMedia: boolean;
-  isCheckIn: boolean; // True if this post is a valid check-in
   reactions: string[];
+  reactionsGiven?: number; // Number of reactions this check-in has given (optional, for future use)
+  reactionsReceived?: number; // Number of reactions this check-in has received
+  legacyPoints?: number; // Points for this check-in
 }
 
 // Reaction data structure for each reaction event
@@ -33,8 +32,7 @@ export interface Reaction {
 
 // Main database structure
 export interface DBData {
-  users: Record<string, User>;
-  posts: Post[];
+  checkIns: CheckIn[];
   reactions: Reaction[];
 }
 
@@ -63,35 +61,7 @@ let adapter: any, db: any;
 const isTest = process.env.NODE_ENV === 'test' || process.env.USE_SAMPLE_DATA === 'true';
 
 const defaultData: DBData = {
-  users: isTest
-    ? {
-        U123: {
-          name: 'Alice',
-          checkIns: [],
-          mediaCheckIns: [],
-          reactionsGiven: 0,
-          reactionsReceived: 0,
-          legacyPoints: 0
-        },
-        U456: {
-          name: 'Bob',
-          checkIns: [],
-          mediaCheckIns: [],
-          reactionsGiven: 0,
-          reactionsReceived: 0,
-          legacyPoints: 0
-        },
-        U789: {
-          name: 'Carol',
-          checkIns: [],
-          mediaCheckIns: [],
-          reactionsGiven: 0,
-          reactionsReceived: 0,
-          legacyPoints: 0
-        }
-      }
-    : {},
-  posts: [],
+  checkIns: [],
   reactions: []
 };
 
@@ -107,42 +77,32 @@ async function initDB(): Promise<void> {
   }
 }
 
-// --- User Functions ---
-
-// Get a user by Slack user ID
-async function getUser(userId: string): Promise<User | undefined> {
-  await loadLowdb();
-  await db.read();
-  return db.data.users[userId];
-}
-
-// Set or update a user by Slack user ID
-async function setUser(userId: string, userData: User): Promise<void> {
-  await loadLowdb();
-  await db.read();
-  db.data.users[userId] = userData;
-  await db.write();
-}
-
 // --- Post and Reaction Functions ---
 
-// Log a post (check-in or comment) in the database
-async function logPost({
+// Log a check-in in the database
+async function logCheckIn({
   user,
   ts,
   date,
-  hasMedia,
-  isCheckIn
+  hasMedia
 }: {
   user: string;
   ts: string;
   date: string;
   hasMedia: boolean;
-  isCheckIn: boolean;
 }): Promise<void> {
   await loadLowdb();
   await db.read();
-  db.data.posts.push({ user, ts, date, hasMedia, isCheckIn, reactions: [] });
+  db.data.checkIns.push({
+    user,
+    ts,
+    date,
+    hasMedia,
+    reactions: [],
+    reactionsGiven: 0,
+    reactionsReceived: 0,
+    legacyPoints: 0
+  });
   await db.write();
 }
 
@@ -164,18 +124,11 @@ async function logReaction({
   await db.write();
 }
 
-// Get all posts for a specific date
-async function getPostsByDate(date: string): Promise<Post[]> {
+// Get all check-ins for a specific date
+async function getCheckInsByDate(date: string): Promise<CheckIn[]> {
   await loadLowdb();
   await db.read();
-  return db.data.posts.filter((p: Post) => p.date === date);
-}
-
-// Get all users in the database
-async function getAllUsers(): Promise<Record<string, User>> {
-  await loadLowdb();
-  await db.read();
-  return db.data.users;
+  return db.data.checkIns.filter((c: CheckIn) => c.date === date);
 }
 
 // --- Reset Functions ---
@@ -187,8 +140,6 @@ async function resetWeekly(): Promise<void> {
   for (const user of Object.values(db.data.users) as User[]) {
     user.checkIns = [];
     user.mediaCheckIns = [];
-    user.reactionsGiven = 0;
-    user.reactionsReceived = 0;
   }
   await db.write();
 }
@@ -200,8 +151,6 @@ async function resetMonthly(): Promise<void> {
   for (const user of Object.values(db.data.users) as User[]) {
     user.checkIns = [];
     user.mediaCheckIns = [];
-    user.reactionsGiven = 0;
-    user.reactionsReceived = 0;
   }
   await db.write();
 }
@@ -211,12 +160,9 @@ async function resetMonthly(): Promise<void> {
 export {
   db,
   initDB,
-  getUser,
-  setUser,
-  logPost,
+  logCheckIn,
   logReaction,
-  getPostsByDate,
-  getAllUsers,
+  getCheckInsByDate,
   resetWeekly,
   resetMonthly
 };
